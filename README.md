@@ -7,6 +7,7 @@ python grd/make_grid.py
 
 python ini/make_ini.py
 ```
+Bathymetry is based on GEBCO. 
 ### Compiling and running
 First, clone this repository and my roms branch 
 ```
@@ -19,7 +20,7 @@ Edit ```build_roms_no_ice.sh``` for the correct paths and application name, then
 ```
 ./perlmutter_env.sh
 ./build_roms_no_ice.sh -j 4
-``
+```
 That should place an executable ```romsM``` in your project directory. To run, go to your project directory and 
 ```
 salloc --nodes 2 --qos interactive --time 04:00:00 --constraint cpu --account=m4304
