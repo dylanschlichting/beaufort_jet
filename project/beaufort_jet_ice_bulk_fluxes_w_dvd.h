@@ -42,19 +42,17 @@
 #define SHORTWAVE
 
 /* Analytic climatology and BC options */
-#define ANA_M3CLIMA
-#define ANA_NUDGCOEF
+#define ANA_NUDGCOEF     /* analytic nudging coefficient */
 #define ANA_FSOBC
-#define ANA_TOBC
-#define ANA_M2CLIMA
-#define ANA_M2OBC     
-#define ANA_M3OBC     
+#define ANA_M2OBC
+#define ANA_M3OBC
+#undef ANA_TOBC
+#undef ANA_M2CLIMA
+#define ANA_M3CLIMA
 
-#undef UV_VIS2
 #undef VISC_GRID
 #undef ASSUMED_SHAPE
 
-/* Sea Ice */
 #define ICE_MODEL
 #ifdef ICE_MODEL
 # define BULK_FLUXES
@@ -66,10 +64,11 @@
 # define ICE_MOMENTUM
 # define ICE_EVP
 # define ICE_ADVECT
-# define ICE_SMOLAR
 # define ICE_UPWIND
 # define ICE_CONVSNOW
+/* # define BEAUFORT_JET_NUDGING */
 #endif
+
 
 /* DVD Options */
 #define TS_VAR
@@ -77,5 +76,4 @@
 #define ANA_PASSIVE
 #define ANA_BPFLUX        
 #define ANA_SPFLUX
-
 

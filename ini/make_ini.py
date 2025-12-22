@@ -20,7 +20,7 @@ Vertical grid parameters (S-coordinate):
    hc      : 5.0               # Critical depth for stretching functions (m)
 
 Lateral buoyancy parameters (for horizontal salinity gradient):
-   M20   : 5e-7                # Maximum horizontal density gradient amplitude
+   M20   : 3e-7                # Maximum horizontal density gradient amplitude
    M2_yo : 120e3               # Y-location of plume/jet edge
    M2_r  : 5e3                 # E-folding scale for horizontal stratification (m)
 
@@ -68,8 +68,8 @@ def C(theta_s, theta_b, s):
     else:
         return -C
 
-def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_500_m.nc', 
-                    grd_path='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_500_m.nc',
+def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_1000_m.nc', 
+                    grd_path='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_1000_m.nc',
                     zlevs=40, theta_s=5.0, theta_b=0.4, hc=5.0,
                     T0=0.5, Tbot = -1.6, delta = 15.0, H_pyc = -50.0,
                     S0=30.0, TCOEF=1.7e-4, SCOEF=7.6e-4,
@@ -118,8 +118,8 @@ def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized
         # Shift to keep background salinity
         salt_1D += (salt_anomaly - salt_anomaly.min())
 
-        # Add option for vertical salinity stratification, not needed but nice to have!
-        dSdz = 0e-3
+        # Add a little bit of vertical salinity stratification to prevent convective instabilities
+        dSdz = 2e-3
         z_abs = np.abs(z)
         salt = salt_1D + dSdz * z_abs
 
@@ -215,8 +215,8 @@ def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized
     print('Writing netcdf INI file: '+output)
     ds.to_netcdf(output)
 
-def add_ice_to_ic(ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_500_m.nc',
-                  ini_modified_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_500_m.nc'):
+def add_ice_to_ic(ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_1000_m.nc',
+                  ini_modified_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_1000_m.nc'):
     '''
     Adds ice variables to initial condition files. Currently, the model will start from an ice-free state,
     so all values are set to zero! 
@@ -268,8 +268,8 @@ def add_ice_to_ic(ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealiz
                               attrs={'units': 'Newton meter-1'})
     ds.to_netcdf(ini_modified_path)
 
-def plot_ic(grd_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_500_m.nc',
-            ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_500_m.nc',
+def plot_ic(grd_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_1000_m.nc',
+            ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_1000_m.nc',
             fig_path_plan = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_conditions.png',
             fig_path_cs = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_conditions_cross_section.png'):
     '''

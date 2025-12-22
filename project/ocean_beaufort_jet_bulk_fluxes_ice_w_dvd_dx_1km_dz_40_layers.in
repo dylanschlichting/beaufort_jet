@@ -184,8 +184,8 @@ ad_Vadvection == C4       \                     ! temperature
    LBC(isFsur) ==   Per     Clo     Per     Cha         ! free-surface
    LBC(isUbar) ==   Per     Clo     Per     Fla         ! 2D U-momentum
    LBC(isVbar) ==   Per     Clo     Per     Fla         ! 2D V-momentum
-   LBC(isUvel) ==   Per     Clo     Per     Gra         ! 3D U-momentum
-   LBC(isVvel) ==   Per     Clo     Per     Gra         ! 3D V-momentum
+   LBC(isUvel) ==   Per     Clo     Per     RadNud         ! 3D U-momentum
+   LBC(isVvel) ==   Per     Clo     Per     RadNud         ! 3D V-momentum
    LBC(isMtke) ==   Per     Clo     Per     Gra         ! mixing TKE
 
    LBC(isTvar) ==   Per     Clo     Per     Gra \       ! temperature
@@ -193,17 +193,17 @@ ad_Vadvection == C4       \                     ! temperature
 
 ! Ice boundary conditions
 
-   LBC(isAice) ==   Per     Clo     Per     Clo         ! ice concentration
-   LBC(isHice) ==   Per     Clo     Per     Clo         ! ice thickness
-   LBC(isHmel) ==   Per     Clo     Per     Clo         ! meltpond thickness ! BU
-   LBC(isHsno) ==   Per     Clo     Per     Clo         ! snow thickness
-   LBC(isTice) ==   Per     Clo     Per     Clo         ! ice temperature
-   LBC(isIage) ==   Per     Clo     Per     Clo         ! ice age ! BU
-   LBC(isISxx) ==   Per     Clo     Per     Clo         ! sigma-11
-   LBC(isISxy) ==   Per     Clo     Per     Clo         ! sigma-12
-   LBC(isISyy) ==   Per     Clo     Per     Clo         ! sigma-22
-   LBC(isUice) ==   Per     Clo     Per     Clo         ! ice U-momentum
-   LBC(isVice) ==   Per     Clo     Per     Clo         ! ice V-momentum
+   LBC(isAice) ==   Per     Clo     Per     Rad         ! ice concentration
+   LBC(isHice) ==   Per     Clo     Per     Rad         ! ice thickness
+   LBC(isHmel) ==   Per     Clo     Per     Rad         ! meltpond thickness ! BU
+   LBC(isHsno) ==   Per     Clo     Per     Rad         ! snow thickness
+   LBC(isTice) ==   Per     Clo     Per     Rad         ! ice temperature
+   LBC(isIage) ==   Per     Clo     Per     Rad         ! ice age ! BU
+   LBC(isISxx) ==   Per     Clo     Per     Rad         ! sigma-11
+   LBC(isISxy) ==   Per     Clo     Per     Rad         ! sigma-12
+   LBC(isISyy) ==   Per     Clo     Per     Rad         ! sigma-22
+   LBC(isUice) ==   Per     Clo     Per     Rad         ! ice U-momentum
+   LBC(isVice) ==   Per     Clo     Per     Rad         ! ice V-momentum
 
 ! Waves Effect on Currents lateral boundary conditions.
 
@@ -279,14 +279,14 @@ ad_VolCons(north) ==  F                            ! northern boundary
 ! Output history, quicksave, average, and diagnostic files parameters.
 
      LDEFOUT == T
-        NHIS == 120 ! Every 2 hours
+        NHIS == 0
      NDEFHIS == 86400
         NXTR == 0
      NDEFXTR == 0
         NQCK == 0
      NDEFQCK == 0
       NTSAVG == 1
-        NAVG == 120
+        NAVG == 180 ! Every 3 hours, should use 2 for analysis but 3 was used to speed up test runs.
      NDEFAVG == 86400
       NTSDIA == 1
         NDIA == 100
@@ -317,7 +317,7 @@ ad_VolCons(north) ==  F                            ! northern boundary
 ! Harmonic/biharmonic horizontal diffusion of tracer for nonlinear model
 ! and adjoint-based algorithms: [1:NAT+NPT,Ngrids].
 
-        TNU2 == 0.d0  0.d0 0.0d0 0.0d0 0.0d0      ! m2/s
+        TNU2 == 0.2d0  0.2d0 0.0d0 0.0d0 0.0d0      ! m2/s
         TNU4 == 2*0.0d0                         ! m4/s
 
      ad_TNU2 == 0.0d0  0.0d0                    ! m2/s
@@ -326,7 +326,7 @@ ad_VolCons(north) ==  F                            ! northern boundary
 ! Harmonic/biharmonic, horizontal viscosity coefficient for nonlinear model
 ! and adjoint-based algorithms: [Ngrids].
 
-       VISC2 == 0.0d0                           ! m2/s
+       VISC2 == 1.0d0                           ! m2/s
        VISC4 == 0.0d0                           ! m4/s
 
     ad_VISC2 == 0.0d0                           ! m2/s
@@ -336,8 +336,8 @@ ad_VolCons(north) ==  F                            ! northern boundary
 ! and/or diffusivity in specific areas of the application domain (like
 ! sponge areas) for the desired application grid.
 
-    LuvSponge == F                              ! horizontal momentum
-LtracerSponge == F F F F F F F F                ! temperature, salinity, inert
+    LuvSponge == T                              ! horizontal momentum
+LtracerSponge == T T F F F F F F                ! temperature, salinity, inert
 
 ! Vertical mixing coefficients for tracers in nonlinear model and
 ! basic state scale factor in adjoint-based algorithms: [1:NAT+NPT,Ngrids]
@@ -1237,7 +1237,7 @@ PIO_I2C_Preq = 65                 ! Maximum pending I2C requests
      SPARNAM =  ROMS/External/sediment.in
      VEGNAME =  ROMS/External/vegetation.in
      USRNAME =  ROMS/External/MyFile.dat
-     IPARNAM = /global/homes/d/dylan617/beaufort_jet/project/ice.in
+     IPARNAM = /global/homes/d/dylan617/beaufort_jet/project/ice_1km.in
 
 !
 !  GLOSSARY:
