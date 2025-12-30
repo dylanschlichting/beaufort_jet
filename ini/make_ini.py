@@ -17,7 +17,7 @@ Vertical grid parameters (S-coordinate):
    zlevs   : 40                # Number of vertical layers
    theta_s : 5.0               # Surface stretching parameter (increases vertical resolution near the surface)
    theta_b : 0.4               # Bottom stretching parameter (increases vertical resolution near the bottom)
-   hc      : 5.0               # Critical depth for stretching functions (m)
+   hc      : 10.0               # Critical depth for stretching functions (m)
 
 Lateral buoyancy parameters (for horizontal salinity gradient):
    M20   : 3e-7                # Maximum horizontal density gradient amplitude
@@ -68,14 +68,14 @@ def C(theta_s, theta_b, s):
     else:
         return -C
 
-def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_1000_m.nc', 
-                    grd_path='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_1000_m.nc',
-                    zlevs=40, theta_s=5.0, theta_b=0.4, hc=5.0,
+def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_500_m.nc', 
+                    grd_path='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_500_m.nc',
+                    zlevs=40, theta_s=5.0, theta_b=0.4, hc=100.0,
                     T0=0.5, Tbot = -1.6, delta = 15.0, H_pyc = -50.0,
                     S0=30.0, TCOEF=1.7e-4, SCOEF=7.6e-4,
                     M2_yo=120e3, M2_r=5e3,
                     balanced_run=True, lateral_strat_type = 'jet',
-                    y0_jet=115e3, L_jet = 15e3, M2_jet_amp=5e-7):
+                    y0_jet=115e3, L_jet = 15e3, M2_jet_amp=4e-7):
 
 
     grd = xr.open_dataset(grd_path)
@@ -119,7 +119,7 @@ def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized
         salt_1D += (salt_anomaly - salt_anomaly.min())
 
         # Add a little bit of vertical salinity stratification to prevent convective instabilities
-        dSdz = 2e-3
+        dSdz = 4e-3
         z_abs = np.abs(z)
         salt = salt_1D + dSdz * z_abs
 
@@ -141,7 +141,6 @@ def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized
 
     # --- Compute smooth vertical temperature profile using a hyperbolic tangent ---
     # Produces a continuous transition from bottom to surface temperature around the pycnocline
-    # temp_profile = T_bottom + 0.5*(T_surface - T_bottom)*(1 - tanh((H_pyc - z)/delta))
     temp_profile = T_bottom + 0.5*(T_surface - T_bottom)*(1 - np.tanh((H_pyc - z)/delta))
 
     # --- Broadcast profile to full 3D grid ---
@@ -215,8 +214,8 @@ def make_ini_no_ice(output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized
     print('Writing netcdf INI file: '+output)
     ds.to_netcdf(output)
 
-def add_ice_to_ic(ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_1000_m.nc',
-                  ini_modified_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_1000_m.nc'):
+def add_ice_to_ic(ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_500_m.nc',
+                  ini_modified_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_500_m.nc'):
     '''
     Adds ice variables to initial condition files. Currently, the model will start from an ice-free state,
     so all values are set to zero! 
@@ -268,8 +267,8 @@ def add_ice_to_ic(ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealiz
                               attrs={'units': 'Newton meter-1'})
     ds.to_netcdf(ini_modified_path)
 
-def plot_ic(grd_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_1000_m.nc',
-            ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_1000_m.nc',
+def plot_ic(grd_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_500_m.nc',
+            ini_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_ice_500_m.nc',
             fig_path_plan = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_conditions.png',
             fig_path_cs = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/ini_conditions_cross_section.png'):
     '''
@@ -368,7 +367,7 @@ def plot_ic(grd_path = '/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inp
     ax = axes[1]
     # Using typical values for demonstration:
     pcm_salt = ax.pcolormesh(y_coord, z_rho_section, salt_section,
-                            cmap=cmo.haline)
+                            cmap=cmo.haline, vmin = 30, vmax = 32.5)
     fig.colorbar(pcm_salt, ax=ax, label='Salinity [PSU]')
     ax.set_ylim(common_ylim)
 

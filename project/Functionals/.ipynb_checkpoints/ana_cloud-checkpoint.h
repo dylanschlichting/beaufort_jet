@@ -1,5 +1,5 @@
 !
-      SUBROUTINE ana_pair (ng, tile, model)
+      SUBROUTINE ana_cloud (ng, tile, model)
 !
 !! git $Id$
 !!======================================================================
@@ -8,8 +8,7 @@
 !!   See License_ROMS.md                                               !
 !=======================================================================
 !                                                                      !
-!  This routine sets surface air pressure (mb) using an analytical     !
-!  expression.                                                         !
+!  This routine sets cloud fraction using an analytical expression.    !
 !                                                                      !
 !=======================================================================
 !
@@ -28,10 +27,10 @@
 !
 #include "tile.h"
 !
-      CALL ana_pair_tile (ng, tile, model,                              &
-     &                    LBi, UBi, LBj, UBj,                           &
-     &                    IminS, ImaxS, JminS, JmaxS,                   &
-     &                    FORCES(ng) % Pair)
+      CALL ana_cloud_tile (ng, tile, model,                             &
+     &                     LBi, UBi, LBj, UBj,                          &
+     &                     IminS, ImaxS, JminS, JmaxS,                  &
+     &                     FORCES(ng) % cloud)
 !
 ! Set analytical header file name used.
 !
@@ -40,22 +39,25 @@
 #else
       IF (Lanafile.and.(tile.eq.0)) THEN
 #endif
-        ANANAME(17)=MyFile
+        ANANAME( 4)=MyFile
       END IF
 !
       RETURN
-      END SUBROUTINE ana_pair
+      END SUBROUTINE ana_cloud
 !
 !***********************************************************************
-      SUBROUTINE ana_pair_tile (ng, tile, model,                        &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          IminS, ImaxS, JminS, JmaxS,             &
-     &                          Pair)
+      SUBROUTINE ana_cloud_tile (ng, tile, model,                       &
+     &                           LBi, UBi, LBj, UBj,                    &
+     &                           IminS, ImaxS, JminS, JmaxS,            &
+     &                           cloud)
 !***********************************************************************
 !
       USE mod_param
       USE mod_scalars
 !
+#ifdef PAPA_CLM
+      USE dateclock_mod,   ONLY : caldate
+#endif
       USE exchange_2d_mod, ONLY : exchange_r2d_tile
 #ifdef DISTRIBUTE
       USE mp_exchange_mod, ONLY : mp_exchange2d
@@ -68,38 +70,67 @@
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
 !
 #ifdef ASSUMED_SHAPE
-      real(r8), intent(out) :: Pair(LBi:,LBj:)
+      real(r8), intent(out) :: cloud(LBi:,LBj:)
 #else
-      real(r8), intent(out) :: Pair(LBi:UBi,LBj:UBj)
+      real(r8), intent(out) :: cloud(LBi:UBi,LBj:UBj)
 #endif
 !
 !  Local variable declarations.
 !
-      integer :: i, j
+      integer  :: i, j
+!
+      real(r8) :: Cval
+      real(dp) :: yday
+
+#ifdef PAPA_CLM
+!
+      real(dp), dimension(14) :: Coktas =                               &
+     &         (/ 6.29_r8, 6.26_r8, 6.31_r8, 6.31_r8, 6.32_r8,          &
+     &            6.70_r8, 7.12_r8, 7.26_r8, 6.93_r8, 6.25_r8,          &
+     &            6.19_r8, 6.23_r8, 6.31_r8, 6.29_r8          /)
+
+      real(dp), dimension(14) :: Cyday =                                &
+     &          (/  0.0_dp,  16.0_dp,  46.0_dp,  75.0_dp, 105.0_dp,     &
+     &            136.0_dp, 166.0_dp, 197.0_dp, 228.0_dp, 258.0_dp,     &
+     &            289.0_dp, 319.0_dp, 350.0_dp, 366.0_dp           /)
+#endif
 
 #include "set_bounds.h"
 !
 !-----------------------------------------------------------------------
-!  Set analytical surface air pressure (mb).
-!  (1 mb = 100 Pa = 1 hPa,  1 bar = 1.0e+5 N/m2 = 1.0e+5 dynes/cm2).
+!  Set analytical cloud fraction (%/100): 0=clear sky, 1:overcast sky.
 !-----------------------------------------------------------------------
 !
-#if defined LAKE_ICE || defined BEAUFORT_JET_ICE_BULK_FLUXES || defined BEAUFORT_JET_ICE_BULK_FLUXES_W_DVD
-      DO j=JstrT,JendT
-        DO i=IstrT,IendT
-          Pair(i,j)=1015.14_r8
-        END DO
+#if defined PAPA_CLM
+
+!  OWS Papa cloud climatology.
+!
+      CALL caldate (tdays(ng), yd_dp=yday)
+      DO i=1,13
+        IF ((yday.ge.Cyday(i)).and.(yday.le.Cyday(i+1))) THEN
+          Cval=0.125_r8*(Coktas(i  )*(Cyday(i+1)-yday)+                 &
+     &                   Coktas(i+1)*(yday-Cyday(i)))/                  &
+     &                  (Cyday(i+1)-Cyday(i))
+        ELSE
+          Cval=0.0_r8
+        END IF
       END DO
 #else
-      ana_pair.h: no values provided for Pair.
+      Cval=0.65_r8
 #endif
+
+      DO j=JstrT,JendT
+        DO i=IstrT,IendT
+          cloud(i,j)=Cval
+        END DO
+      END DO
 !
 !  Exchange boundary data.
 !
       IF (EWperiodic(ng).or.NSperiodic(ng)) THEN
         CALL exchange_r2d_tile (ng, tile,                               &
      &                          LBi, UBi, LBj, UBj,                     &
-     &                          Pair)
+     &                          cloud)
       END IF
 
 #ifdef DISTRIBUTE
@@ -107,8 +138,8 @@
      &                    LBi, UBi, LBj, UBj,                           &
      &                    NghostPoints,                                 &
      &                    EWperiodic(ng), NSperiodic(ng),               &
-     &                    Pair)
+     &                    cloud)
 #endif
 !
       RETURN
-      END SUBROUTINE ana_pair_tile
+      END SUBROUTINE ana_cloud_tile

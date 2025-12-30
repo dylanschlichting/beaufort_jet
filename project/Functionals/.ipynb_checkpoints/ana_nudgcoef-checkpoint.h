@@ -183,11 +183,11 @@
 !  with a time scale ranging from 10 s at the boundary to 1000 s 
 !  five points in, linearly interpolated at the points in between. 
 !
-      cff1=1.0_r8/(3.0_r8)
-      cff2=1.0_r8/(300.0_r8)
-      DO j=MAX(JstrR,Mm(ng)-10),JendR
+      cff1=1.0_r8/(10.0_r8)
+      cff2=1.0_r8/(1000.0_r8)
+      DO j=MAX(JstrR,Mm(ng)-5),JendR
         DO i=IstrR,IendR
-          wrk(i,j)=cff1+REAL(Mm(ng)-j,r8)*(cff2-cff1)/10.0_r8
+          wrk(i,j)=cff1+REAL(Mm(ng)-j,r8)*(cff2-cff1)/5.0_r8
         END DO
       END DO
       IF (LnudgeM2CLM(ng)) THEN
@@ -201,14 +201,14 @@
 # ifdef SOLVE3D
 !!
 !!  Set M3 nudging coefficients in the southern northern edges
-!!  with a time scale ranging from 10 s at the boundary to 1000 s 
+!!  with a time scale ranging from 100 s at the boundary to 10000 s 
 !!  five points in, linearly interpolated at the points in between.
 !!
-      cff1=1.0_r8/(3.0_r8)
-      cff2=1.0_r8/(300.0_r8)
-      DO j=MAX(JstrR,Mm(ng)-10),JendR
+      cff1=1.0_r8/(100.0_r8)
+      cff2=1.0_r8/(10000.0_r8)
+      DO j=MAX(JstrR,Mm(ng)-5),JendR
         DO i=IstrR,IendR
-          wrk(i,j)=cff1+REAL(Mm(ng)-j,r8)*(cff2-cff1)/10.0_r8
+          wrk(i,j)=cff1+REAL(Mm(ng)-j,r8)*(cff2-cff1)/5.0_r8
         END DO
       END DO
       IF (LnudgeM3CLM(ng)) THEN

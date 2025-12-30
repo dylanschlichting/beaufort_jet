@@ -241,7 +241,7 @@ ad_VolCons(south) ==  F                            ! southern boundary
 ad_VolCons(north) ==  F                            ! northern boundary
 
 ! Time-Stepping parameters
-      NTIMES == 345600       ! 120 days with DT = 30
+      NTIMES == 264960       ! 92 days with DT = 30
           DT == 30.0d0       ! 5.0d0
      NDTFAST == 20           ! 20
 
@@ -1215,14 +1215,14 @@ PIO_I2C_Preq = 65                 ! Maximum pending I2C requests
 
      DAINAME == roms_dai.nc
      GSTNAME == roms_gst.nc
-     RSTNAME == /global/cfs/cdirs/m4572/dylan617/beaufort_jet/runs/ocean_rst_ice_500m_w_dvd_constant_forcing_u3c4_keps.nc
-     HISNAME == /global/cfs/cdirs/m4572/dylan617/beaufort_jet/runs/roms_his_ice_500m_w_dvd_constant_forcing_u3c4_keps.nc
+     RSTNAME == /global/cfs/cdirs/m4572/dylan617/beaufort_jet/runs/ocean_rst_no_ice_500m_w_dvd_constant_forcing_u3c4_keps.nc
+     HISNAME == /global/cfs/cdirs/m4572/dylan617/beaufort_jet/runs/roms_his_no_ice_500m_w_dvd_constant_forcing_u3c4_keps.nc
      XTRNAME == roms_xtr.nc
      QCKNAME == roms_qck.nc
      TLMNAME == roms_tlm.nc
      TLFNAME == roms_tlf.nc
      ADJNAME == roms_adj.nc
-     AVGNAME == /global/cfs/cdirs/m4572/dylan617/beaufort_jet/runs/roms_avg_ice_500m_w_dvd_constant_forcing_u3c4_keps.nc
+     AVGNAME == /global/cfs/cdirs/m4572/dylan617/beaufort_jet/runs/roms_avg_no_ice_500m_w_dvd_constant_forcing_u3c4_keps.nc
      HARNAME == roms_har.nc
      DIANAME == roms_dia.nc
      STANAME == roms_sta.nc

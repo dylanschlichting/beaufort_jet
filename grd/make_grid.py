@@ -25,8 +25,8 @@ Command-line arguments:
 
 Note: the resulting roms.in file will have these properties
 
-          Lm == Lx_km-3            ! Number of I-direction INTERIOR RHO-points for 1 km 
-          Mm == Ly_km-3            ! Number of J-direction INTERIOR RHO-points for 1 km
+          Lm == ((Lx_km*1000)/dx)-2          ! Number of I-direction INTERIOR RHO-points for 1 km 
+          Mm == ((Ly_km*1000)/dy)-2          ! Number of J-direction INTERIOR RHO-points for 1 km
 
 Bathymetry formula:
 
@@ -48,12 +48,14 @@ import os
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import curve_fit
 
-def make_CGrid(x, y):
+def make_CGrid(x, y, dx, dy):
     """
     Construct a ROMS C-grid (rho, u, v, psi points, and grid metrics pm/pn).
     
     Inputs:
         x, y: 2D arrays of vertex coordinates (meters)
+        dx: spacing between rho points in x-direction (meters) 
+        dy: spacing between rho points in y-direction (meters)
     Outputs:
         xr.Dataset containing:
             - x_rho, y_rho: RHO-point coordinates
@@ -66,35 +68,74 @@ def make_CGrid(x, y):
         x = np.ma.masked_where((np.isnan(x)) | (np.isnan(y)), x)
         y = np.ma.masked_where((np.isnan(x)) | (np.isnan(y)), y)
 
-    ds = xr.Dataset({'x_vert': (['eta_vert', 'xi_vert'], x),
-                     'y_vert': (['eta_vert', 'xi_vert'], y)})
+    # BCU
+    print('x shape: ', np.shape(x))
+    print('y shape: ', np.shape(y))
+    print('x: ', x)
+    print('y: ', y)
+    print('x dtype: ', x.dtype)
+    print('y dtype: ', y.dtype)
 
-    # RHO, U, V, PSI points
-    ds['x_rho'] = (['eta_rho', 'xi_rho'], 0.25 * (x[1:, 1:] + x[1:, :-1] + x[:-1, 1:] + x[:-1, :-1]))
-    ds['y_rho'] = (['eta_rho', 'xi_rho'], 0.25 * (y[1:, 1:] + y[1:, :-1] + y[:-1, 1:] + y[:-1, :-1]))
-    ds['x_u'] = (['eta_u', 'xi_u'], 0.5 * (x[:-1, 1:-1] + x[1:, 1:-1]))
-    ds['y_u'] = (['eta_u', 'xi_u'], 0.5 * (y[:-1, 1:-1] + y[1:, 1:-1]))
-    ds['x_v'] = (['eta_v', 'xi_v'], 0.5 * (x[1:-1, :-1] + x[1:-1, 1:]))
-    ds['y_v'] = (['eta_v', 'xi_v'], 0.5 * (y[1:-1, :-1] + y[1:-1, 1:]))
-    ds['x_psi'] = (['eta_psi', 'xi_psi'], x[1:-1, 1:-1])
-    ds['y_psi'] = (['eta_psi', 'xi_psi'], y[1:-1, 1:-1])
+    # OG - returns shape (eta_rho-1,xi_rho-1)
+    # ds = xr.Dataset({'x_vert': (['eta_vert', 'xi_vert'], x),
+    #                  'y_vert': (['eta_vert', 'xi_vert'], y)})
 
-    # Grid metrics
-    x_temp = 0.5 * (ds.x_vert[1:, :] + ds.x_vert[:-1, :])
-    y_temp = 0.5 * (ds.y_vert[1:, :] + ds.y_vert[:-1, :])
-    dx = np.sqrt(np.diff(x_temp, axis=1)**2 + np.diff(y_temp, axis=1)**2)
-    x_temp = 0.5 * (ds.x_vert[:, 1:] + ds.x_vert[:, :-1])
-    y_temp = 0.5 * (ds.y_vert[:, 1:] + ds.y_vert[:, :-1])
-    dy = np.sqrt(np.diff(x_temp, axis=0)**2 + np.diff(y_temp, axis=0)**2)
+    # # RHO, U, V, PSI points
+    # ds['x_rho'] = (['eta_rho', 'xi_rho'], 0.25 * (x[1:, 1:] + x[1:, :-1] + x[:-1, 1:] + x[:-1, :-1]))
+    # ds['y_rho'] = (['eta_rho', 'xi_rho'], 0.25 * (y[1:, 1:] + y[1:, :-1] + y[:-1, 1:] + y[:-1, :-1]))
+    # ds['x_u'] = (['eta_u', 'xi_u'], 0.5 * (x[:-1, 1:-1] + x[1:, 1:-1]))
+    # ds['y_u'] = (['eta_u', 'xi_u'], 0.5 * (y[:-1, 1:-1] + y[1:, 1:-1]))
+    # ds['x_v'] = (['eta_v', 'xi_v'], 0.5 * (x[1:-1, :-1] + x[1:-1, 1:]))
+    # ds['y_v'] = (['eta_v', 'xi_v'], 0.5 * (y[1:-1, :-1] + y[1:-1, 1:]))
+    # ds['x_psi'] = (['eta_psi', 'xi_psi'], x[1:-1, 1:-1])
+    # ds['y_psi'] = (['eta_psi', 'xi_psi'], y[1:-1, 1:-1])
+    
+    # BCU
+    ds = xr.Dataset({'x_rho': (['eta_rho', 'xi_rho'], x),
+                     'y_rho': (['eta_rho', 'xi_rho'], y)})
+    
+    ds['x_rho'] = (['eta_rho', 'xi_rho'], x)
+    ds['y_rho'] = (['eta_rho', 'xi_rho'], y) # might need to flip...check later (after run)
+    ds['x_psi'] = (['eta_psi', 'xi_psi'], (x[:-1,:-1]+(dx/2))) # Should be size [eta_rho-1, xi_rho-1], starting at 250
+    ds['y_psi'] = (['eta_psi', 'xi_psi'], (y[:-1,:-1]+(dy/2))) # Should be size [eta_rho-1, xi_rho-1], starting at 250
+    ds['x_u'] = (['eta_u', 'xi_u'], (x[:,:-1]+(dx/2))) # Should be size [eta_rho, xi_rho-1]
+    ds['y_u'] = (['eta_u', 'xi_u'], (y[:,:-1]+(dy/2))) # Should be size [eta_rho, xi_rho-1]
+    ds['x_v'] = (['eta_v', 'xi_v'], (x[:-1,:]+(dx/2))) # Should be size [eta_rho-1, xi_rho]
+    ds['y_v'] = (['eta_v', 'xi_v'], (y[:-1,:]+(dy/2))) # Should be size [eta_rho-1, xi_rho]
 
-    ds['pm'] = (['eta_rho', 'xi_rho'], 1. / dx)
-    ds['pn'] = (['eta_rho', 'xi_rho'], 1. / dy)
+    # Check shapes 
+    print('x_rho shape: ', np.shape(ds.x_rho.values))
+    print('y_rho shape: ', np.shape(ds.y_rho.values))
+    print('x_psi shape: ', np.shape(ds.x_psi.values))
+    print('y_psi shape: ', np.shape(ds.y_psi.values))
+    print('x_u shape: ', np.shape(ds.x_u.values))
+    print('y_u shape: ', np.shape(ds.y_u.values))
+    print('x_v shape: ', np.shape(ds.x_v.values))
+    print('y_v shape: ', np.shape(ds.y_v.values))
+
+    # Grid metrics - OG
+    # x_temp = 0.5 * (ds.x_rho[1:, :] + ds.x_rho[:-1, :])
+    # y_temp = 0.5 * (ds.y_rho[1:, :] + ds.y_rho[:-1, :])
+    # dx = np.sqrt(np.diff(x_temp, axis=1)**2 + np.diff(y_temp, axis=1)**2)
+    # x_temp = 0.5 * (ds.x_rho[:, 1:] + ds.x_rho[:, :-1])
+    # y_temp = 0.5 * (ds.y_rho[:, 1:] + ds.y_rho[:, :-1])
+    # dy = np.sqrt(np.diff(x_temp, axis=0)**2 + np.diff(y_temp, axis=0)**2)
+
+    # ds['pm'] = (['eta_rho', 'xi_rho'], 1. / dx)
+    # ds['pn'] = (['eta_rho', 'xi_rho'], 1. / dy)
+
+    # Grid metrics - BCU
+    dx_matx = np.full_like((x), dx)
+    dy_matx = np.full_like((y), dy)
+
+    ds['pm'] = (['eta_rho', 'xi_rho'], 1. / dx_matx)
+    ds['pn'] = (['eta_rho', 'xi_rho'], 1. / dy_matx)
 
     return ds
 
-def make_grd_from_bathymetry(bfit, x_km, dx=500, dy=500,
-                             Lx_km=201, Ly_km=251,
-                             output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_500_m.nc',
+def make_grd_from_bathymetry(bfit, x_km, dx=500.0, dy=500.0,
+                             Lx_km=201, Ly_km=501,
+                             output='/pscratch/sd/d/dylan617/beaufort_roms/runs_idealized/inputs/grd_500_m.nc', # grd_500m.nc, grd_1km.nc
                              spherical=False, angle=0.0):
     """
     Generate a ROMS C-grid using a 1D bathymetry profile.
@@ -112,12 +153,24 @@ def make_grd_from_bathymetry(bfit, x_km, dx=500, dy=500,
     # --- Grid coordinates (vertices) ---
     nx_vert = int(Lx_km * 1000 / dx)
     ny_vert = int(Ly_km * 1000 / dy)
+    print('nx_vert: ', nx_vert)
+    print('ny_vert: ', ny_vert)
+    print('Lx_km: ', Lx_km)
+    print('Ly_km: ', Ly_km)
+    print('dx: ', dx)
+    print('dy: ', dy)
     x = np.arange(nx_vert) * dx
     y = np.arange(ny_vert) * dy
+    # BCU Convert to float to help with math in make_in.py
+    x = x.astype(np.float64)
+    y = y.astype(np.float64)
     x_vert, y_vert = np.meshgrid(x, y)
+    print('x_vert shape: ', np.shape(x_vert))
+    print('y_vert shape: ', np.shape(y_vert))
 
     # --- Build C-grid ---
-    grd = make_CGrid(x_vert, y_vert)
+    grd = make_CGrid(x_vert, y_vert, dx, dy)
+    print('grd shape: ', np.shape(grd.eta_rho))
 
     # --- Interpolate bathymetry ---
     y_rho_km = grd['y_rho'].values[:, 0] / 1000.0
@@ -126,15 +179,12 @@ def make_grd_from_bathymetry(bfit, x_km, dx=500, dy=500,
 
 
     # --- Add random noise equal to 0.5% of local depth ---
-    # noise_amplitude = 0.005 * h_grid
-    # rng = np.random.default_rng(seed=42)  # deterministic for reproducibility
-    # h_grid_noisy = h_grid + rng.uniform(-1, 1, size=h_grid.shape) * noise_amplitude
 
     # offshore coordinate (meters → km)
     y = grd.y_rho  # shape (eta_rho, xi_rho)
     offshore_dist = np.abs(y)  # or remove abs() if y is strictly positive
 
-    noise_amplitude = 0.01 * h_grid
+    noise_amplitude = 0.005 * h_grid
     rng = np.random.default_rng(seed=42)
     noise = rng.uniform(-1, 1, size=h_grid.shape) * noise_amplitude
 
@@ -144,12 +194,13 @@ def make_grd_from_bathymetry(bfit, x_km, dx=500, dy=500,
 
     # update ROMS grid
     grd['h'] = (['eta_rho', 'xi_rho'], np.abs(h_grid_noisy))
-    # grd['h'] = (['eta_rho', 'xi_rho'], np.abs(h_grid_noisy))
-
-    # grd['h'] = (['eta_rho', 'xi_rho'], np.abs(h_grid))
 
     # --- Add Coriolis, angle, etc. ---
-    f_value = 1.387e-4  
+    # Set Coriolis parameter
+    lat_rho = 71.5 # degrees
+    Aomega = 2 * np.pi * (1 + 1/365.24) / 86400 # Earth's rotation
+    f_value = 2 * Aomega * np.sin(lat_rho * np.pi/180.0) # Coriolis, converted to rads since np.sin expects rad
+ 
     grd['f'] = f_value * xr.ones_like(grd.pm)
     grd.f.attrs.update({
         'long_name': 'Coriolis parameter at RHO-points',
@@ -165,21 +216,33 @@ def make_grd_from_bathymetry(bfit, x_km, dx=500, dy=500,
     grd['xl'] = x_vert.max()
     grd['el'] = y_vert.max()
 
-    visc_factor = xr.ones_like(grd.pm)
-    visc_factor.attrs.update({
+    # Lateral mixing & sponge layer parameters. 
+    # 10 points going from 20.0 to 1.0
+    # We use [:, None] to transform it from shape (10,) to (10, 1) for broadcasting
+    taper = np.linspace(20.0, 1.0, 10)[:, None][::-1]
+    
+    # Viscosity factor
+    visc_factor = np.ones_like(grd.pm.values)
+    visc_factor[-10:, :] = taper 
+    
+    grd['visc_factor'] = (grd.pm.dims, visc_factor)
+    grd['visc_factor'].attrs.update({
         'long_name': 'Horizontal viscosity factor at RHO-points',
         'units': 'nondimensional',
         'field': 'VISC_FACTOR, scalar'
     })
-    grd['visc_factor'] = visc_factor
+    
+    # Diffusivity factor
+    diff_factor = np.ones_like(grd.pm.values)
+    diff_factor[-10:, :] = taper
 
-    diff_factor = xr.ones_like(grd.pm)
-    diff_factor.attrs.update({
+    grd['diff_factor'] = (grd.pm.dims, diff_factor)
+    grd['diff_factor'].attrs.update({
         'long_name': 'Horizontal diffusivity factor at RHO-points',
         'units': 'nondimensional',
         'field': 'DIFF_FACTOR, scalar'
     })
-    grd['diff_factor'] = diff_factor
+
     # --- Write file ---
     if os.path.exists(output):
         os.remove(output)
@@ -234,16 +297,30 @@ def fit_tanh_bathymetry(x_km, depth_smooth):
 
     def tanh_bathymetry(x, H_min, H_offshore, x_mid, L):
         return H_min + 0.5 * (H_offshore - H_min) * (1 + np.tanh((x - x_mid) / L))
+    
+    def smooth_cap_depth(h, Hmax=1300.0, transition=200.0):
+        """
+        Smoothly cap bathymetry at Hmax without affecting values below Hmax.
+        """
+        h = h.copy()
+        deep = h > Hmax
+        h[deep] = Hmax + transition * np.tanh((h[deep] - Hmax) / transition)
+
+        return h
+
 
     # Initial guesses
     H_min_guess = depth_smooth[0]
     H_offshore_guess = depth_smooth[-1]
+    print(H_offshore_guess)
     x_mid_guess = x_km[np.argmax(np.gradient(depth_smooth, x_km))]
     L_guess = 60  # typical slope width (km)
     p0 = [H_min_guess, H_offshore_guess, x_mid_guess - 10, L_guess]
 
     popt, _ = curve_fit(tanh_bathymetry, x_km, depth_smooth, p0=p0)
     b_fit = np.abs(tanh_bathymetry(x_km, *popt))
+    # Cap at 1500 m with smooth transition
+    b_fit = smooth_cap_depth(b_fit, Hmax=1300.0, transition=200.0)
 
     # Artificially shoal the shelf to match better with observations. Set minimum H 
     # to 5 m to be more realistic. This should be improved, but is good enough for 
@@ -286,7 +363,7 @@ if __name__ == "__main__":
         help="Domain length in x (km). Default = 200"
     )
     parser.add_argument(
-        "--Ly_km", type=float, default=251,
+        "--Ly_km", type=float, default=501,
         help="Domain length in y (km). Default = 250"
     )
     parser.add_argument(

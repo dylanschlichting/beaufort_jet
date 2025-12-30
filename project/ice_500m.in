@@ -58,6 +58,10 @@
 
     Astrength == 20.d0
 
+! Ice strength parameter to scale compressive and convergent forces in the 
+! rheological model [N/m2].
+     Pstar = 2.75d4
+
 ! Minimum and Maximum shear strength [N/m2].
 
       zetaMin == 0.d0
